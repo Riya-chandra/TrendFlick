@@ -18,8 +18,7 @@ def get_gemini_hashtags(text):
         print("Error: GEMINI_API_KEY not found in environment variables.")
         return ["#Trending"]
 
-    # ✅ Correct endpoint version
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
 
     headers = {
         "Content-Type": "application/json"
@@ -48,11 +47,10 @@ def get_gemini_hashtags(text):
         if not candidates:
             raise ValueError("No candidates returned by Gemini.")
 
-        parts = candidates[0].get("content", {}).get("parts", [])
-        if not parts:
-            raise ValueError("No content parts returned by Gemini.")
+        raw_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+        if not raw_text:
+            raise ValueError("No output text returned by Gemini.")
 
-        raw_text = parts[0].get("text", "")
         print("Gemini returned text:", raw_text)
 
         hashtags = [tag.strip() for tag in raw_text.split() if tag.startswith("#")]
@@ -61,6 +59,8 @@ def get_gemini_hashtags(text):
     except Exception as e:
         print("Parsing or API error:", str(e))
         return ["#Trending"]
+
+
 
 
 # ✅ Load your ML models
