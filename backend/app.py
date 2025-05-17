@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 import os
 import requests
 
-# Load .env file first
 load_dotenv()
 
 app = Flask(__name__)
@@ -62,8 +61,6 @@ def get_gemini_hashtags(text):
 
 
 
-
-# ✅ Load your ML models
 vectorizer = joblib.load('../ml_model/vectorizer.joblib')
 clf = joblib.load('../ml_model/sentiment_model.joblib')
 reg_likes = joblib.load('../ml_model/likes_model.joblib')
@@ -78,7 +75,6 @@ def predict():
         return jsonify({'error': 'No input text provided'}), 400
 
     try:
-        # ✅ Model predictions
         X = vectorizer.transform([text])
         sentiment_pred = clf.predict(X)[0]
         likes_pred = reg_likes.predict(X)[0]
@@ -86,7 +82,6 @@ def predict():
 
         sentiment_label = 'Positive' if sentiment_pred == 1 else 'Negative'
 
-        # ✅ Get hashtags using Gemini
         hashtags = get_gemini_hashtags(text)
 
         return jsonify({
