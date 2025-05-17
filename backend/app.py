@@ -23,7 +23,7 @@ def get_gemini_hashtags(text):
         "Content-Type": "application/json"
     }
 
-    prompt = f"Suggest 5 trending and relevant hashtags for this text:\n\"{text}\"\nOnly return hashtags separated by spaces. No explanation."
+    prompt = f"Suggest 10 trending and relevant hashtags for this text:\n\"{text}\"\nOnly return hashtags separated by spaces. No explanation."
 
     payload = {
         "contents": [
