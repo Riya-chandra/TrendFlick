@@ -1,35 +1,104 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import joblib
+from dotenv import load_dotenv
+import os
+import requests
+
+# Load .env file first
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-# Load models
+def get_gemini_hashtags(text):
+    api_key = os.getenv('GEMINI_API_KEY')
+
+    if not api_key:
+        print("Error: GEMINI_API_KEY not found in environment variables.")
+        return ["#Trending"]
+
+    # ✅ Correct endpoint version
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    prompt = f"Suggest 5 trending and relevant hashtags for this text:\n\"{text}\"\nOnly return hashtags separated by spaces. No explanation."
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt}
+                ]
+            }
+        ]
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        result = response.json()
+
+        print("Gemini raw response:", result)
+
+        candidates = result.get("candidates", [])
+        if not candidates:
+            raise ValueError("No candidates returned by Gemini.")
+
+        parts = candidates[0].get("content", {}).get("parts", [])
+        if not parts:
+            raise ValueError("No content parts returned by Gemini.")
+
+        raw_text = parts[0].get("text", "")
+        print("Gemini returned text:", raw_text)
+
+        hashtags = [tag.strip() for tag in raw_text.split() if tag.startswith("#")]
+        return hashtags if hashtags else ["#Trending"]
+
+    except Exception as e:
+        print("Parsing or API error:", str(e))
+        return ["#Trending"]
+
+
+# ✅ Load your ML models
 vectorizer = joblib.load('../ml_model/vectorizer.joblib')
 clf = joblib.load('../ml_model/sentiment_model.joblib')
 reg_likes = joblib.load('../ml_model/likes_model.joblib')
-reg_retweets = joblib.load('../ml_model/retweet_model.joblib')  # NEW
+reg_retweets = joblib.load('../ml_model/retweet_model.joblib')
 
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.json
-    text = data.get('text', '')
+    text = data.get('text', '').strip()
+
     if not text:
         return jsonify({'error': 'No input text provided'}), 400
 
-    X = vectorizer.transform([text])
-    sentiment_pred = clf.predict(X)[0]
-    likes_pred = reg_likes.predict(X)[0]
-    retweet_pred = reg_retweets.predict(X)[0]  # NEW
+    try:
+        # ✅ Model predictions
+        X = vectorizer.transform([text])
+        sentiment_pred = clf.predict(X)[0]
+        likes_pred = reg_likes.predict(X)[0]
+        retweet_pred = reg_retweets.predict(X)[0]
 
-    sentiment_label = 'Positive' if sentiment_pred == 1 else 'Negative'
+        sentiment_label = 'Positive' if sentiment_pred == 1 else 'Negative'
 
-    return jsonify({
-        'sentiment': sentiment_label,
-        'likes': float(likes_pred),
-        'retweets': float(retweet_pred)  # NEW
-    })
+        # ✅ Get hashtags using Gemini
+        hashtags = get_gemini_hashtags(text)
+
+        return jsonify({
+            'sentiment': sentiment_label,
+            'likes': float(likes_pred),
+            'retweets': float(retweet_pred),
+            'hashtags': hashtags
+        })
+
+    except Exception as e:
+        print("Prediction error:", e)
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
