@@ -32,7 +32,13 @@ def get_gemini_hashtags(text):
                     {"text": prompt}
                 ]
             }
-        ]
+        ],
+            "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 128,  # Increased token limit
+        "topP": 0.8,
+        "topK": 40
+            },
     }
 
     try:
