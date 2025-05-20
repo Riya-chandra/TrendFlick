@@ -67,10 +67,10 @@ def get_gemini_hashtags(text):
 
 
 
-vectorizer = joblib.load('../ml_model/vectorizer.joblib')
-clf = joblib.load('../ml_model/sentiment_model.joblib')
-reg_likes = joblib.load('../ml_model/likes_model.joblib')
-reg_retweets = joblib.load('../ml_model/retweet_model.joblib')
+vectorizer = joblib.load('ml_model/vectorizer.joblib')
+clf = joblib.load('ml_model/sentiment_model.joblib')
+reg_likes = joblib.load('ml_model/likes_model.joblib')
+reg_retweets = joblib.load('ml_model/retweet_model.joblib')
 
 @app.route('/predict', methods=['POST'])
 def predict():
